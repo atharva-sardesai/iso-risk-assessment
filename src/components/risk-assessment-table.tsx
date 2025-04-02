@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import type { RiskAssessment } from "@/lib/types"
 import { RiskDetailsDialog } from "@/components/risk-details-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getRiskLevelLabel } from "@/lib/utils"
 
 interface RiskAssessmentTableProps {
   assessments: RiskAssessment[]
@@ -70,14 +71,14 @@ export function RiskAssessmentTable({ assessments, onEdit, onDelete }: RiskAsses
     return 0
   })
 
-  const getRiskBadgeVariant = (riskLevel: string) => {
-    switch (riskLevel.toLowerCase()) {
+  const getRiskBadgeVariant = (riskLevel: number) => {
+    const label = getRiskLevelLabel(riskLevel)
+    switch (label.toLowerCase()) {
       case "low":
         return "outline"
       case "medium":
         return "secondary"
       case "high":
-        return "destructive"
       case "critical":
         return "destructive"
       default:
@@ -205,7 +206,7 @@ export function RiskAssessmentTable({ assessments, onEdit, onDelete }: RiskAsses
                     <TableCell>{String(assessment.impact)}</TableCell>
                     <TableCell>{String(assessment.likelihood)}</TableCell>
                     <TableCell>
-                      <Badge variant={getRiskBadgeVariant(String(assessment.riskLevel))}>{assessment.riskLevel}</Badge>
+                      <Badge variant={getRiskBadgeVariant(Number(assessment.riskLevel))}>{assessment.riskLevel}</Badge>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {assessment.existingControls.length > 50
