@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import type { RiskAssessment } from "@/lib/types"
+import { getRiskLevelLabel } from "@/lib/utils"
 
 interface RiskDetailsDialogProps {
   risk: RiskAssessment
@@ -11,14 +12,14 @@ interface RiskDetailsDialogProps {
 }
 
 export function RiskDetailsDialog({ risk, open, onOpenChange }: RiskDetailsDialogProps) {
-  const getRiskBadgeVariant = (riskLevel: string) => {
-    switch (riskLevel.toLowerCase()) {
+  const getRiskBadgeVariant = (riskLevel: number) => {
+    const label = getRiskLevelLabel(riskLevel)
+    switch (label.toLowerCase()) {
       case "low":
         return "outline"
       case "medium":
         return "secondary"
       case "high":
-        return "destructive"
       case "critical":
         return "destructive"
       default:
@@ -32,7 +33,9 @@ export function RiskDetailsDialog({ risk, open, onOpenChange }: RiskDetailsDialo
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Risk Assessment Details</span>
-            <Badge variant={getRiskBadgeVariant(risk.riskLevel)}>{risk.riskLevel}</Badge>
+            <Badge variant={getRiskBadgeVariant(risk.riskLevel)}>
+              {getRiskLevelLabel(risk.riskLevel)}
+            </Badge>
           </DialogTitle>
           <DialogDescription>Complete details of the selected risk assessment</DialogDescription>
         </DialogHeader>
