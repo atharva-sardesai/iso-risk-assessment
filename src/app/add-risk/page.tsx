@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation"
 import { RiskAssessmentForm } from "@/components/risk-assessment-form"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
+import type { RiskAssessment } from "@/lib/types"
 
 export default function AddRiskPage() {
   const router = useRouter()
 
-  const handleSave = (assessment: any) => {
+  const handleSave = (assessment: RiskAssessment) => {
     // TODO: Implement save functionality
     console.log("Saving assessment:", assessment)
     router.push("/") // Navigate back to home after saving

@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronUp, MoreHorizontal, Edit, Trash2, Eye, Filter } from "lucide-react"
+import { ChevronDown, ChevronUp, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { RiskAssessment } from "@/lib/types"
 import { RiskDetailsDialog } from "@/components/risk-details-dialog"
