@@ -11,11 +11,10 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { calculateRiskLevel, getRiskLevelLabel } from "@/lib/utils"
 import type { RiskAssessment } from "@/lib/types"
-import { ISO_RISK_CATEGORIES } from "@/lib/constants"
 
 interface RiskAssessmentFormProps {
-  initialData: RiskAssessment | null
-  onSave: (assessment: RiskAssessment) => void
+  initialData?: RiskAssessment | null
+  onSave: (data: RiskAssessment) => void
   onCancel: () => void
 }
 
