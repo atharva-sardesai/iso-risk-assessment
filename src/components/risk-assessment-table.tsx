@@ -172,7 +172,6 @@ export function RiskAssessmentTable({ assessments, onEdit, onDelete }: RiskAsses
           <Table>
             <TableHeader className="bg-background">
               <TableRow>
-                {renderColumnHeader("companyName", "Company", true)}
                 {renderColumnHeader("category", "Category", true)}
                 {renderColumnHeader("asset", "Asset", true)}
                 {renderColumnHeader("threat", "Threat", true)}
@@ -187,14 +186,13 @@ export function RiskAssessmentTable({ assessments, onEdit, onDelete }: RiskAsses
             <TableBody>
               {sortedAssessments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     No risk assessments found. Add a new risk assessment to get started.
                   </TableCell>
                 </TableRow>
               ) : (
                 sortedAssessments.map((assessment) => (
                   <TableRow key={assessment.id}>
-                    <TableCell>{assessment.companyName || "—"}</TableCell>
                     <TableCell>{assessment.category || "—"}</TableCell>
                     <TableCell className="font-medium">{assessment.asset}</TableCell>
                     <TableCell>{assessment.threat}</TableCell>
@@ -204,7 +202,7 @@ export function RiskAssessmentTable({ assessments, onEdit, onDelete }: RiskAsses
                         : assessment.vulnerability}
                     </TableCell>
                     <TableCell>{String(assessment.impact)}</TableCell>
-                    <TableCell>{String(assessment.likelihood)}</TableCell>
+                    <TableCell>{`${assessment.likelihood}%`}</TableCell>
                     <TableCell>
                       <Badge variant={getRiskBadgeVariant(Number(assessment.riskLevel))}>{assessment.riskLevel}</Badge>
                     </TableCell>

@@ -40,12 +40,6 @@ export function RiskDetailsDialog({ risk, open, onOpenChange }: RiskDetailsDialo
           <DialogDescription>Complete details of the selected risk assessment</DialogDescription>
         </DialogHeader>
 
-        {risk.companyName && (
-          <div className="py-2 border-b mb-4">
-            <h2 className="text-lg font-semibold">{risk.companyName}</h2>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
           {risk.category && (
             <div className="space-y-2">
@@ -76,7 +70,7 @@ export function RiskDetailsDialog({ risk, open, onOpenChange }: RiskDetailsDialo
 
           <div className="space-y-2">
             <h3 className="font-semibold text-sm text-muted-foreground">Likelihood</h3>
-            <p>{risk.likelihood}</p>
+            <p>{`${risk.likelihood}%`}</p>
           </div>
 
           <div className="space-y-2">

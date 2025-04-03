@@ -1,6 +1,5 @@
 export interface RiskAssessment {
   id: string
-  companyName?: string
   asset: string
   threat: string
   vulnerability: string

@@ -22,7 +22,6 @@ interface RiskAssessmentFormProps {
 export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssessmentFormProps) {
   const [formData, setFormData] = useState<RiskAssessment>({
     id: initialData?.id || "",
-    companyName: initialData?.companyName || "",
     asset: initialData?.asset || "",
     threat: initialData?.threat || "",
     vulnerability: initialData?.vulnerability || "",
@@ -58,7 +57,7 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>{initialData ? "Edit Risk Assessment" : "New Risk Assessment"}</CardTitle>
@@ -67,34 +66,16 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-2 mb-4">
-            <Label htmlFor="companyName">Company Name</Label>
-            <Input
-              id="companyName"
-              name="companyName"
-              value={formData.companyName || ""}
-              onChange={handleChange}
-              placeholder="Enter company name"
-            />
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select
-                value={formData.category || ""}
-                onValueChange={(value) => handleSelectChange("category", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select risk category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ISO_RISK_CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="category"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                placeholder="e.g., Access Control, Network Security"
+              />
             </div>
 
             <div className="space-y-2">

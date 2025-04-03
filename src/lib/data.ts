@@ -3,7 +3,6 @@ import type { RiskAssessment } from "./types"
 export const initialRiskAssessments: RiskAssessment[] = [
   {
     id: "risk-1",
-    companyName: "Example Corp",
     category: "Access Control",
     asset: "Customer Database",
     threat: "Unauthorized Access",
