@@ -61,7 +61,6 @@ export function RiskAssessmentDashboard() {
     const csvContent = [
       [
         "ID",
-        "Company Name",
         "Category",
         "Asset",
         "Threat",
@@ -70,14 +69,13 @@ export function RiskAssessmentDashboard() {
         "Likelihood",
         "Risk Level",
         "Existing Controls",
-        "Control Effectiveness",
-        "Risk Owner",
         "Treatment Plan",
+        "Owner",
         "Priority",
+        "Control Effectiveness"
       ],
       ...riskAssessments.map((item) => [
         item.id,
-        item.companyName || "",
         item.category || "",
         item.asset,
         item.threat,
@@ -86,11 +84,11 @@ export function RiskAssessmentDashboard() {
         item.likelihood,
         item.riskLevel,
         item.existingControls,
-        item.controlEffectiveness || "",
-        item.owner || "",
         item.treatmentPlan,
+        item.owner || "",
         item.priority || "",
-      ]),
+        item.controlEffectiveness || ""
+      ])
     ]
       .map((row) => row.join(","))
       .join("\n")
