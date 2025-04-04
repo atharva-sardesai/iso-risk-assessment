@@ -25,13 +25,13 @@ export function CompanySelector({ onCompanySelect, selectedCompanyId }: CompanyS
         setIsLoading(true)
         setError(null)
 
-        if (!isSupabaseAvailable() || !supabase) {
+        if (!isSupabaseAvailable()) {
           setError("Database connection is not available. Please check your environment configuration.")
           setCompanies([])
           return
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabase!
           .from('companies')
           .select('*')
           .order('name')
@@ -57,12 +57,12 @@ export function CompanySelector({ onCompanySelect, selectedCompanyId }: CompanyS
         return
       }
 
-      if (!isSupabaseAvailable() || !supabase) {
+      if (!isSupabaseAvailable()) {
         setError("Database connection is not available. Please check your environment configuration.")
         return
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('companies')
         .insert([{ name: newCompanyName.trim() }])
         .select()
@@ -90,15 +90,30 @@ export function CompanySelector({ onCompanySelect, selectedCompanyId }: CompanyS
     )
   }
 
+  if (error) {
+    return (
+      <div className="max-w-md mx-auto p-6 space-y-6">
+        <h1 className="text-2xl font-bold text-center">Error</h1>
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+          <p>{error}</p>
+          <p className="mt-2 text-sm">
+            Please check your environment configuration and try again.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => window.location.reload()}
+        >
+          Try Again
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-md mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold text-center">Select Company</h1>
-      
-      {error && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-          <p>{error}</p>
-        </div>
-      )}
 
       <div className="space-y-4">
         <Select

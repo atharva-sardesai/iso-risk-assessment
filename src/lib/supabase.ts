@@ -1,17 +1,21 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Check if we're in a browser environment
-const isBrowser = typeof window !== 'undefined'
+// Get environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Get environment variables with fallbacks
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+// Log environment variable status
+if (typeof window !== 'undefined') {
+  console.log('Supabase URL available:', !!supabaseUrl)
+  console.log('Supabase Anon Key available:', !!supabaseAnonKey)
+}
 
-// Create a Supabase client with the correct configuration
-export const supabase = isBrowser && supabaseUrl && supabaseAnonKey
+// Create a single supabase client for interacting with your database
+export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
+        autoRefreshToken: true,
       },
       db: {
         schema: 'public',
@@ -24,7 +28,25 @@ export const supabase = isBrowser && supabaseUrl && supabaseAnonKey
     })
   : null
 
-// Helper function to check if Supabase is available
-export const isSupabaseAvailable = () => {
-  return !!supabase
+export function isSupabaseAvailable() {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  // Check if environment variables are available
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Missing Supabase environment variables:')
+    if (!supabaseUrl) console.error('- NEXT_PUBLIC_SUPABASE_URL is missing')
+    if (!supabaseAnonKey) console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY is missing')
+    return false
+  }
+
+  // Check if the client was created successfully
+  if (!supabase) {
+    console.error('Supabase client initialization failed')
+    return false
+  }
+
+  return true
 } 
