@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { calculateRiskLevel, getRiskLevelLabel } from "@/lib/utils"
 import type { RiskAssessment } from "@/lib/types"
+import { RISK_CATEGORIES, COMMON_ASSETS } from "@/lib/constants"
 
 interface RiskAssessmentFormProps {
   initialData?: RiskAssessment | null
@@ -35,6 +36,11 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
     controlEffectiveness: initialData?.controlEffectiveness || "",
   })
 
+  const [showOtherCategory, setShowOtherCategory] = useState(false)
+  const [showOtherAsset, setShowOtherAsset] = useState(false)
+  const [otherCategory, setOtherCategory] = useState("")
+  const [otherAsset, setOtherAsset] = useState("")
+
   // Update risk level when impact or likelihood changes
   useEffect(() => {
     const riskLevel = calculateRiskLevel(formData.impact, formData.likelihood)
@@ -47,7 +53,37 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    if (name === "category") {
+      if (value === "Other") {
+        setShowOtherCategory(true)
+        setFormData(prev => ({ ...prev, category: otherCategory }))
+      } else {
+        setShowOtherCategory(false)
+        setFormData(prev => ({ ...prev, category: value }))
+      }
+    } else if (name === "asset") {
+      if (value === "Other") {
+        setShowOtherAsset(true)
+        setFormData(prev => ({ ...prev, asset: otherAsset }))
+      } else {
+        setShowOtherAsset(false)
+        setFormData(prev => ({ ...prev, asset: value }))
+      }
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }))
+    }
+  }
+
+  const handleOtherCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setOtherCategory(value)
+    setFormData(prev => ({ ...prev, category: value }))
+  }
+
+  const handleOtherAssetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setOtherAsset(value)
+    setFormData(prev => ({ ...prev, asset: value }))
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -68,25 +104,60 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Input
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                placeholder="e.g., Access Control, Network Security"
-              />
+              {showOtherCategory ? (
+                <Input
+                  id="category"
+                  name="category"
+                  value={otherCategory}
+                  onChange={handleOtherCategoryChange}
+                  placeholder="Enter category"
+                />
+              ) : (
+                <Select 
+                  value={formData.category} 
+                  onValueChange={(value) => handleSelectChange("category", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RISK_CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="asset">Asset</Label>
-              <Input
-                id="asset"
-                name="asset"
-                value={formData.asset}
-                onChange={handleChange}
-                placeholder="e.g., Customer Database"
-                required
-              />
+              {showOtherAsset ? (
+                <Input
+                  id="asset"
+                  name="asset"
+                  value={otherAsset}
+                  onChange={handleOtherAssetChange}
+                  placeholder="Enter asset"
+                />
+              ) : (
+                <Select 
+                  value={formData.asset} 
+                  onValueChange={(value) => handleSelectChange("asset", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select asset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMMON_ASSETS.map((asset) => (
+                      <SelectItem key={asset} value={asset}>
+                        {asset}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
