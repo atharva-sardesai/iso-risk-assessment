@@ -193,6 +193,11 @@ export function RiskAssessmentDashboard({ companyId }: RiskAssessmentDashboardPr
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+          <p>{error}</p>
+        </div>
+      )}
       <div className="flex justify-end">
         <Button onClick={() => setShowForm(true)}>
           <Plus className="h-4 w-4 mr-2" />

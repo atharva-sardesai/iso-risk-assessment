@@ -1,43 +1,67 @@
+"use client"
+
 import { useEffect, useState } from 'react'
 import { Company } from '@/lib/types'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseAvailable } from '@/lib/supabase'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface CompanySelectorProps {
-  onCompanySelect: (company: Company) => void
+  onCompanySelect: (companyId: string) => void
+  selectedCompanyId?: string
 }
 
-export function CompanySelector({ onCompanySelect }: CompanySelectorProps) {
+export function CompanySelector({ onCompanySelect, selectedCompanyId }: CompanySelectorProps) {
   const [companies, setCompanies] = useState<Company[]>([])
   const [newCompanyName, setNewCompanyName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    async function fetchCompanies() {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        if (!isSupabaseAvailable() || !supabase) {
+          setError("Database connection is not available. Please check your environment configuration.")
+          setCompanies([])
+          return
+        }
+
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*')
+          .order('name')
+
+        if (error) throw error
+        setCompanies(data || [])
+      } catch (error) {
+        console.error('Error fetching companies:', error)
+        setError("Failed to fetch companies. Please try again later.")
+        setCompanies([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
     fetchCompanies()
   }, [])
 
-  async function fetchCompanies() {
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .order('name')
-
-      if (error) throw error
-      setCompanies(data || [])
-    } catch (error) {
-      console.error('Error fetching companies:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   async function createCompany() {
-    if (!newCompanyName.trim()) return
-
     try {
+      if (!newCompanyName.trim()) {
+        setError("Company name cannot be empty")
+        return
+      }
+
+      if (!isSupabaseAvailable() || !supabase) {
+        setError("Database connection is not available. Please check your environment configuration.")
+        return
+      }
+
       const { data, error } = await supabase
         .from('companies')
         .insert([{ name: newCompanyName.trim() }])
@@ -45,34 +69,53 @@ export function CompanySelector({ onCompanySelect }: CompanySelectorProps) {
         .single()
 
       if (error) throw error
-      if (data) {
-        setCompanies([...companies, data])
-        setNewCompanyName('')
-      }
+
+      setCompanies([...companies, data])
+      setNewCompanyName('')
+      onCompanySelect(data.id)
     } catch (error) {
       console.error('Error creating company:', error)
+      setError("Failed to create company. Please try again later.")
     }
   }
 
   if (isLoading) {
-    return <div>Loading companies...</div>
+    return (
+      <div className="flex items-center justify-center min-h-[100px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Loading companies...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold text-center">Select Company</h1>
       
+      {error && (
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+          <p>{error}</p>
+        </div>
+      )}
+
       <div className="space-y-4">
-        {companies.map((company) => (
-          <Button
-            key={company.id}
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => onCompanySelect(company)}
-          >
-            {company.name}
-          </Button>
-        ))}
+        <Select
+          value={selectedCompanyId}
+          onValueChange={onCompanySelect}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select a company" />
+          </SelectTrigger>
+          <SelectContent>
+            {companies.map((company) => (
+              <SelectItem key={company.id} value={company.id}>
+                {company.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Dialog>

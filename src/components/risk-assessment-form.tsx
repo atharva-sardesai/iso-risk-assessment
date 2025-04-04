@@ -176,6 +176,11 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel, companyId }:
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+          <p>{error}</p>
+        </div>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>{initialData ? "Edit Risk Assessment" : "New Risk Assessment"}</CardTitle>

@@ -8,8 +8,16 @@ import { RiskAssessmentDashboard } from '@/components/risk-assessment-dashboard'
 export default function Home() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
 
+  const handleCompanySelect = (companyId: string) => {
+    // Find the company by ID and set it
+    setSelectedCompany((prev) => {
+      if (prev?.id === companyId) return prev
+      return { id: companyId, name: "Loading..." } as Company
+    })
+  }
+
   if (!selectedCompany) {
-    return <CompanySelector onCompanySelect={setSelectedCompany} />
+    return <CompanySelector onCompanySelect={handleCompanySelect} />
   }
 
   return (
