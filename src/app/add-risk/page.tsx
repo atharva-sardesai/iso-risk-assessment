@@ -5,6 +5,7 @@ import { RiskAssessmentForm } from "@/components/risk-assessment-form"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import { Suspense } from "react"
+import { isSupabaseAvailable } from "@/lib/supabase"
 
 function AddRiskContent() {
   const router = useRouter()
@@ -27,6 +28,27 @@ function AddRiskContent() {
         </div>
         <div className="bg-destructive/10 text-destructive p-4 rounded-md">
           <p>No company ID provided. Please select a company first.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isSupabaseAvailable()) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/")}
+            className="hover:bg-muted"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold">Error</h1>
+        </div>
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+          <p>Database connection is not available. Please check your environment configuration.</p>
         </div>
       </div>
     )

@@ -9,7 +9,7 @@ import { RiskAssessmentTable } from "@/components/risk-assessment-table"
 import { RiskAssessmentForm } from "@/components/risk-assessment-form"
 import { getRiskLevelLabel } from "@/lib/utils"
 import type { RiskAssessment } from "@/lib/types"
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseAvailable } from '@/lib/supabase'
 
 interface RiskAssessmentDashboardProps {
   companyId: string
@@ -22,11 +22,20 @@ export function RiskAssessmentDashboard({ companyId }: RiskAssessmentDashboardPr
   const [filterCategory, setFilterCategory] = useState("all")
   const [showForm, setShowForm] = useState(false)
   const [editingAssessment, setEditingAssessment] = useState<RiskAssessment | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchRisks = useCallback(async () => {
     try {
       setIsLoading(true)
-      const { data, error } = await supabase
+      setError(null)
+      
+      if (!isSupabaseAvailable()) {
+        setError("Database connection is not available. Please check your environment configuration.")
+        setRisks([])
+        return
+      }
+      
+      const { data, error } = await supabase!
         .from('risk_assessments')
         .select('*')
         .eq('company_id', companyId)
@@ -36,6 +45,7 @@ export function RiskAssessmentDashboard({ companyId }: RiskAssessmentDashboardPr
       setRisks(data || [])
     } catch (error) {
       console.error('Error fetching risks:', error)
+      setError("Failed to fetch risk assessments. Please try again later.")
       setRisks([])
     } finally {
       setIsLoading(false)
@@ -68,9 +78,14 @@ export function RiskAssessmentDashboard({ companyId }: RiskAssessmentDashboardPr
 
   const handleSave = async (assessment: RiskAssessment) => {
     try {
+      if (!isSupabaseAvailable()) {
+        setError("Database connection is not available. Please check your environment configuration.")
+        return
+      }
+      
       if (editingAssessment) {
         // Update existing assessment
-        const { error } = await supabase
+        const { error } = await supabase!
           .from('risk_assessments')
           .update(assessment)
           .eq('id', editingAssessment.id)
@@ -78,7 +93,7 @@ export function RiskAssessmentDashboard({ companyId }: RiskAssessmentDashboardPr
         if (error) throw error
       } else {
         // Create new assessment
-        const { error } = await supabase
+        const { error } = await supabase!
           .from('risk_assessments')
           .insert([{ ...assessment, company_id: companyId }])
 
@@ -93,13 +108,18 @@ export function RiskAssessmentDashboard({ companyId }: RiskAssessmentDashboardPr
       setEditingAssessment(null)
     } catch (error) {
       console.error('Error saving risk assessment:', error)
-      // You might want to show an error message to the user here
+      setError("Failed to save risk assessment. Please try again later.")
     }
   }
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase
+      if (!isSupabaseAvailable()) {
+        setError("Database connection is not available. Please check your environment configuration.")
+        return
+      }
+      
+      const { error } = await supabase!
         .from('risk_assessments')
         .delete()
         .eq('id', id)
@@ -110,7 +130,7 @@ export function RiskAssessmentDashboard({ companyId }: RiskAssessmentDashboardPr
       await fetchRisks()
     } catch (error) {
       console.error('Error deleting risk assessment:', error)
-      // You might want to show an error message to the user here
+      setError("Failed to delete risk assessment. Please try again later.")
     }
   }
 

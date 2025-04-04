@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getRiskLevelLabel } from "@/lib/utils"
 import type { RiskAssessment } from "@/lib/types"
 import { RISK_CATEGORIES, COMMON_ASSETS } from "@/lib/constants"
-import { supabase } from "@/lib/supabase"
+import { supabase, isSupabaseAvailable } from "@/lib/supabase"
 
 interface RiskAssessmentFormProps {
   initialData?: RiskAssessment | null
@@ -40,6 +40,7 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel, companyId }:
   )
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const [showOtherCategory, setShowOtherCategory] = useState(false)
   const [showOtherAsset, setShowOtherAsset] = useState(false)
@@ -98,69 +99,76 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel, companyId }:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setError(null)
 
     try {
-      if (!companyId) {
-        throw new Error('Company ID is required')
+      if (!isSupabaseAvailable()) {
+        setError("Database connection is not available. Please check your environment configuration.")
+        setIsSubmitting(false)
+        return
       }
 
-      // Ensure all required fields are present
+      // Validate required fields
       if (!formData.asset || !formData.threat || !formData.vulnerability) {
-        throw new Error('Please fill in all required fields')
+        setError("Please fill in all required fields")
+        setIsSubmitting(false)
+        return
       }
 
       // Convert impact and likelihood to numbers
       const impact = Number(formData.impact) || 1
       const likelihood = Number(formData.likelihood) || 1
       
-      // Calculate risk level (impact * likelihood)
+      // Calculate risk level
       const riskLevel = impact * likelihood
 
-      const riskData = {
+      // Prepare the data for submission
+      const assessmentData = {
         ...formData,
         company_id: companyId,
-        impact: impact,
-        likelihood: likelihood,
+        impact,
+        likelihood,
         risk_level: riskLevel,
-        existing_controls: formData.existing_controls || "",
-        treatment_plan: formData.treatment_plan || "",
-        owner: formData.owner || "",
-        priority: formData.priority || "Medium",
-        category: formData.category || "Technical",
-        control_effectiveness: formData.control_effectiveness || "Partially Effective",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }
 
-      console.log('Submitting risk data:', riskData)
+      console.log("Submitting assessment data:", assessmentData)
 
       if (initialData?.id) {
-        // Update existing risk
-        const { error } = await supabase
+        // Update existing assessment
+        const { error } = await supabase!
           .from('risk_assessments')
-          .update(riskData)
+          .update(assessmentData)
           .eq('id', initialData.id)
 
         if (error) {
-          console.error('Error updating risk:', error)
-          throw error
+          console.error("Error updating assessment:", error)
+          setError(`Error updating assessment: ${error.message}`)
+          setIsSubmitting(false)
+          return
         }
       } else {
-        // Create new risk
-        const { error } = await supabase
+        // Create new assessment
+        const { error } = await supabase!
           .from('risk_assessments')
-          .insert([riskData])
+          .insert([assessmentData])
 
         if (error) {
-          console.error('Error creating risk:', error)
-          throw error
+          console.error("Error creating assessment:", error)
+          setError(`Error creating assessment: ${error.message}`)
+          setIsSubmitting(false)
+          return
         }
       }
 
+      // Call the onSave callback if provided
       if (onSave) {
-        onSave(riskData as RiskAssessment)
+        onSave(assessmentData as RiskAssessment)
       }
     } catch (error) {
-      console.error('Error saving risk assessment:', error)
-      // You might want to show an error message to the user here
+      console.error("Error submitting form:", error)
+      setError("An unexpected error occurred. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
