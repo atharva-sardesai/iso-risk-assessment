@@ -33,8 +33,8 @@ export function RiskDetailsDialog({ risk, open, onOpenChange }: RiskDetailsDialo
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Risk Assessment Details</span>
-            <Badge variant={getRiskBadgeVariant(risk.riskLevel)}>
-              {getRiskLevelLabel(risk.riskLevel)}
+            <Badge variant={getRiskBadgeVariant(risk.risk_level)}>
+              {getRiskLevelLabel(risk.risk_level)}
             </Badge>
           </DialogTitle>
           <DialogDescription>Complete details of the selected risk assessment</DialogDescription>
@@ -48,20 +48,26 @@ export function RiskDetailsDialog({ risk, open, onOpenChange }: RiskDetailsDialo
             </div>
           )}
 
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Asset</h3>
-            <p>{risk.asset}</p>
-          </div>
+          {risk.asset && (
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground">Asset</h3>
+              <p>{risk.asset}</p>
+            </div>
+          )}
 
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Threat</h3>
-            <p>{risk.threat}</p>
-          </div>
+          {risk.threat && (
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground">Threat</h3>
+              <p>{risk.threat}</p>
+            </div>
+          )}
 
-          <div className="space-y-2 col-span-1 md:col-span-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Vulnerability</h3>
-            <p>{risk.vulnerability}</p>
-          </div>
+          {risk.vulnerability && (
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground">Vulnerability</h3>
+              <p>{risk.vulnerability}</p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <h3 className="font-semibold text-sm text-muted-foreground">Impact</h3>
@@ -70,29 +76,26 @@ export function RiskDetailsDialog({ risk, open, onOpenChange }: RiskDetailsDialo
 
           <div className="space-y-2">
             <h3 className="font-semibold text-sm text-muted-foreground">Likelihood</h3>
-            <p>{`${risk.likelihood}%`}</p>
+            <p>{risk.likelihood}</p>
           </div>
 
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Existing Controls</h3>
-            <p>{risk.existingControls}</p>
-          </div>
-
-          {risk.controlEffectiveness && (
+          {risk.existing_controls && (
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm text-muted-foreground">Control Effectiveness</h3>
-              <p>{risk.controlEffectiveness}</p>
+              <h3 className="font-semibold text-sm text-muted-foreground">Existing Controls</h3>
+              <p>{risk.existing_controls}</p>
             </div>
           )}
 
-          <div className="space-y-2 col-span-1 md:col-span-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Treatment Plan</h3>
-            <p>{risk.treatmentPlan}</p>
-          </div>
+          {risk.treatment_plan && (
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground">Treatment Plan</h3>
+              <p>{risk.treatment_plan}</p>
+            </div>
+          )}
 
           {risk.owner && (
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm text-muted-foreground">Risk Owner</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground">Owner</h3>
               <p>{risk.owner}</p>
             </div>
           )}
@@ -101,6 +104,13 @@ export function RiskDetailsDialog({ risk, open, onOpenChange }: RiskDetailsDialo
             <div className="space-y-2">
               <h3 className="font-semibold text-sm text-muted-foreground">Priority</h3>
               <p>{risk.priority}</p>
+            </div>
+          )}
+
+          {risk.control_effectiveness && (
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground">Control Effectiveness</h3>
+              <p>{risk.control_effectiveness}</p>
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { RiskAssessmentForm } from "@/components/risk-assessment-form"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -8,15 +8,38 @@ import type { RiskAssessment } from "@/lib/types"
 
 export default function AddRiskPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const companyId = searchParams.get('companyId')
+
+  if (!companyId) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/")}
+            className="hover:bg-muted"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold">Error</h1>
+        </div>
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+          <p>No company ID provided. Please select a company first.</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleSave = (assessment: RiskAssessment) => {
-    // TODO: Implement save functionality
-    console.log("Saving assessment:", assessment)
-    router.push("/") // Navigate back to home after saving
+    // Navigate to the company's risk assessment page
+    router.push(`/companies/${companyId}/risks`)
   }
 
   const handleCancel = () => {
-    router.push("/") // Navigate back to home on cancel
+    // Navigate back to the company's risk assessment page
+    router.push(`/companies/${companyId}/risks`)
   }
 
   return (
@@ -25,7 +48,7 @@ export default function AddRiskPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push("/")}
+          onClick={() => router.push(`/companies/${companyId}/risks`)}
           className="hover:bg-muted"
         >
           <ArrowLeft className="h-4 w-4" />

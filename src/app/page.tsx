@@ -1,23 +1,34 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { RiskAssessmentDashboard } from "@/components/Seccomply risk-assessment-dashboard"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { useState } from 'react'
+import { Company } from '@/lib/types'
+import { CompanySelector } from '@/components/company-selector'
+import { RiskAssessmentDashboard } from '@/components/risk-assessment-dashboard'
 
 export default function Home() {
-  const router = useRouter()
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
+
+  if (!selectedCompany) {
+    return <CompanySelector onCompanySelect={setSelectedCompany} />
+  }
 
   return (
-    <main className="container mx-auto py-6 px-4 md:px-6">
+    <main className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">ISO 27001 Risk Assessment</h1>
-        <Button onClick={() => router.push("/add-risk")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add New Risk
-        </Button>
+        <h1 className="text-2xl font-bold">Risk Assessment Dashboard</h1>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-600">
+            Company: {selectedCompany.name}
+          </span>
+          <button
+            onClick={() => setSelectedCompany(null)}
+            className="text-sm text-blue-600 hover:text-blue-800"
+          >
+            Change Company
+          </button>
+        </div>
       </div>
-      <RiskAssessmentDashboard />
+      <RiskAssessmentDashboard companyId={selectedCompany.id} />
     </main>
   )
 }

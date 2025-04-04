@@ -12,29 +12,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { calculateRiskLevel, getRiskLevelLabel } from "@/lib/utils"
 import type { RiskAssessment } from "@/lib/types"
 import { RISK_CATEGORIES, COMMON_ASSETS } from "@/lib/constants"
+import { useRouter, useSearchParams } from "next/navigation"
+import { supabase } from "@/lib/supabase"
 
 interface RiskAssessmentFormProps {
   initialData?: RiskAssessment | null
-  onSave: (data: RiskAssessment) => void
-  onCancel: () => void
+  onSave?: (assessment: RiskAssessment) => void
+  onCancel?: () => void
+  companyId: string
 }
 
-export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssessmentFormProps) {
-  const [formData, setFormData] = useState<RiskAssessment>({
-    id: initialData?.id || "",
-    asset: initialData?.asset || "",
-    threat: initialData?.threat || "",
-    vulnerability: initialData?.vulnerability || "",
-    impact: initialData?.impact || 1,
-    likelihood: initialData?.likelihood || 0,
-    riskLevel: initialData?.riskLevel || 0,
-    existingControls: initialData?.existingControls || "",
-    treatmentPlan: initialData?.treatmentPlan || "",
-    owner: initialData?.owner || "",
-    priority: initialData?.priority || "",
-    category: initialData?.category || "",
-    controlEffectiveness: initialData?.controlEffectiveness || "",
-  })
+export function RiskAssessmentForm({ initialData, onSave, onCancel, companyId }: RiskAssessmentFormProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const [formData, setFormData] = useState<Partial<RiskAssessment>>(
+    initialData || {
+      asset: "",
+      threat: "",
+      vulnerability: "",
+      impact: 1,
+      likelihood: 1,
+      risk_level: 1,
+      existing_controls: "",
+      treatment_plan: "",
+      owner: "",
+      priority: "Medium",
+      category: "Technical",
+      control_effectiveness: "Partially Effective",
+    }
+  )
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [showOtherCategory, setShowOtherCategory] = useState(false)
   const [showOtherAsset, setShowOtherAsset] = useState(false)
@@ -43,8 +52,14 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
 
   // Update risk level when impact or likelihood changes
   useEffect(() => {
-    const riskLevel = calculateRiskLevel(formData.impact, formData.likelihood)
-    setFormData((prev) => ({ ...prev, riskLevel }))
+    const impact = Number(formData.impact) || 1
+    const likelihood = Number(formData.likelihood) || 1
+    const riskLevel = impact * likelihood
+    
+    setFormData(prev => ({
+      ...prev,
+      risk_level: riskLevel
+    }))
   }, [formData.impact, formData.likelihood])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -52,25 +67,23 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSelectChange = (name: string, value: string) => {
-    if (name === "category") {
-      if (value === "Other") {
-        setShowOtherCategory(true)
-        setFormData(prev => ({ ...prev, category: otherCategory }))
-      } else {
-        setShowOtherCategory(false)
-        setFormData(prev => ({ ...prev, category: value }))
-      }
-    } else if (name === "asset") {
-      if (value === "Other") {
-        setShowOtherAsset(true)
-        setFormData(prev => ({ ...prev, asset: otherAsset }))
-      } else {
-        setShowOtherAsset(false)
-        setFormData(prev => ({ ...prev, asset: value }))
-      }
+  const handleSelectChange = (field: string, value: string) => {
+    if (field === "category" && value === "Other") {
+      setShowOtherCategory(true)
+    } else if (field === "category") {
+      setShowOtherCategory(false)
+    }
+    if (field === "asset" && value === "Other") {
+      setShowOtherAsset(true)
+    } else if (field === "asset") {
+      setShowOtherAsset(false)
+    }
+    
+    // Handle numeric fields
+    if (field === "impact" || field === "likelihood") {
+      setFormData((prev) => ({ ...prev, [field]: Number(value) }))
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }))
+      setFormData((prev) => ({ ...prev, [field]: value }))
     }
   }
 
@@ -86,9 +99,75 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
     setFormData(prev => ({ ...prev, asset: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
+    setIsSubmitting(true)
+
+    try {
+      if (!companyId) {
+        throw new Error('Company ID is required')
+      }
+
+      // Ensure all required fields are present
+      if (!formData.asset || !formData.threat || !formData.vulnerability) {
+        throw new Error('Please fill in all required fields')
+      }
+
+      // Convert impact and likelihood to numbers
+      const impact = Number(formData.impact) || 1
+      const likelihood = Number(formData.likelihood) || 1
+      
+      // Calculate risk level (impact * likelihood)
+      const riskLevel = impact * likelihood
+
+      const riskData = {
+        ...formData,
+        company_id: companyId,
+        impact: impact,
+        likelihood: likelihood,
+        risk_level: riskLevel,
+        existing_controls: formData.existing_controls || "",
+        treatment_plan: formData.treatment_plan || "",
+        owner: formData.owner || "",
+        priority: formData.priority || "Medium",
+        category: formData.category || "Technical",
+        control_effectiveness: formData.control_effectiveness || "Partially Effective",
+      }
+
+      console.log('Submitting risk data:', riskData)
+
+      if (initialData?.id) {
+        // Update existing risk
+        const { error } = await supabase
+          .from('risk_assessments')
+          .update(riskData)
+          .eq('id', initialData.id)
+
+        if (error) {
+          console.error('Error updating risk:', error)
+          throw error
+        }
+      } else {
+        // Create new risk
+        const { error } = await supabase
+          .from('risk_assessments')
+          .insert([riskData])
+
+        if (error) {
+          console.error('Error creating risk:', error)
+          throw error
+        }
+      }
+
+      if (onSave) {
+        onSave(riskData as RiskAssessment)
+      }
+    } catch (error) {
+      console.error('Error saving risk assessment:', error)
+      // You might want to show an error message to the user here
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -114,7 +193,7 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
                 />
               ) : (
                 <Select 
-                  value={formData.category} 
+                  value={formData.category || "Technical"} 
                   onValueChange={(value) => handleSelectChange("category", value)}
                 >
                   <SelectTrigger>
@@ -122,7 +201,7 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
                   </SelectTrigger>
                   <SelectContent>
                     {RISK_CATEGORIES.map((category) => (
-                      <SelectItem key={category} value={category}>
+                      <SelectItem key={`category-${category}`} value={category}>
                         {category}
                       </SelectItem>
                     ))}
@@ -143,7 +222,7 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
                 />
               ) : (
                 <Select 
-                  value={formData.asset} 
+                  value={formData.asset || "Other"} 
                   onValueChange={(value) => handleSelectChange("asset", value)}
                 >
                   <SelectTrigger>
@@ -151,7 +230,7 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
                   </SelectTrigger>
                   <SelectContent>
                     {COMMON_ASSETS.map((asset) => (
-                      <SelectItem key={asset} value={asset}>
+                      <SelectItem key={`asset-${asset}`} value={asset}>
                         {asset}
                       </SelectItem>
                     ))}
@@ -167,7 +246,7 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
               <Input
                 id="threat"
                 name="threat"
-                value={formData.threat}
+                value={formData.threat || ""}
                 onChange={handleChange}
                 placeholder="e.g., Unauthorized Access"
                 required
@@ -191,7 +270,7 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
             <Textarea
               id="vulnerability"
               name="vulnerability"
-              value={formData.vulnerability}
+              value={formData.vulnerability || ""}
               onChange={handleChange}
               placeholder="Describe the vulnerability in detail"
               required
@@ -203,18 +282,18 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
             <div className="space-y-2">
               <Label htmlFor="impact">Impact</Label>
               <Select 
-                value={formData.impact.toString()} 
+                value={String(formData.impact || 1)} 
                 onValueChange={(value) => handleSelectChange("impact", value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select impact (1-10)" />
+                  <SelectValue placeholder="Select impact level" />
                 </SelectTrigger>
                 <SelectContent>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      {num}
-                    </SelectItem>
-                  ))}
+                  <SelectItem key="impact-1" value="1">1 - Negligible</SelectItem>
+                  <SelectItem key="impact-2" value="2">2 - Minor</SelectItem>
+                  <SelectItem key="impact-3" value="3">3 - Moderate</SelectItem>
+                  <SelectItem key="impact-4" value="4">4 - Major</SelectItem>
+                  <SelectItem key="impact-5" value="5">5 - Severe</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -222,34 +301,34 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
             <div className="space-y-2">
               <Label htmlFor="likelihood">Likelihood</Label>
               <Select 
-                value={formData.likelihood.toString()} 
+                value={String(formData.likelihood || 1)} 
                 onValueChange={(value) => handleSelectChange("likelihood", value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select likelihood (0-100%)" />
+                  <SelectValue placeholder="Select likelihood" />
                 </SelectTrigger>
                 <SelectContent>
-                  {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      {num}%
-                    </SelectItem>
-                  ))}
+                  <SelectItem key="likelihood-1" value="1">1 - Rare</SelectItem>
+                  <SelectItem key="likelihood-2" value="2">2 - Unlikely</SelectItem>
+                  <SelectItem key="likelihood-3" value="3">3 - Possible</SelectItem>
+                  <SelectItem key="likelihood-4" value="4">4 - Likely</SelectItem>
+                  <SelectItem key="likelihood-5" value="5">5 - Almost Certain</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="riskLevel">Risk Score</Label>
+              <Label htmlFor="risk_level">Risk Level</Label>
               <div className="flex items-center gap-2">
                 <Input 
-                  id="riskLevel" 
-                  name="riskLevel" 
-                  value={formData.riskLevel.toFixed(2)} 
+                  id="risk_level" 
+                  name="risk_level" 
+                  value={formData.risk_level?.toFixed(2) || "1.00"} 
                   readOnly 
                   className="bg-muted" 
                 />
                 <span className="text-sm text-muted-foreground">
-                  ({getRiskLevelLabel(formData.riskLevel)})
+                  ({getRiskLevelLabel(formData.risk_level || 1)})
                 </span>
               </div>
             </div>
@@ -257,11 +336,11 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="existingControls">Existing Controls</Label>
+              <Label htmlFor="existing_controls">Existing Controls</Label>
               <Textarea
-                id="existingControls"
-                name="existingControls"
-                value={formData.existingControls}
+                id="existing_controls"
+                name="existing_controls"
+                value={formData.existing_controls || ""}
                 onChange={handleChange}
                 placeholder="List any existing controls that mitigate this risk"
                 rows={3}
@@ -269,31 +348,30 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="controlEffectiveness">Control Effectiveness</Label>
+              <Label htmlFor="control_effectiveness">Control Effectiveness</Label>
               <Select
-                value={formData.controlEffectiveness || ""}
-                onValueChange={(value) => handleSelectChange("controlEffectiveness", value)}
+                value={formData.control_effectiveness || "Partially Effective"}
+                onValueChange={(value) => handleSelectChange("control_effectiveness", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select effectiveness" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Not Set">Not Set</SelectItem>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="N/A">N/A</SelectItem>
+                  <SelectItem key="effectiveness-not" value="Not Effective">Not Effective</SelectItem>
+                  <SelectItem key="effectiveness-partial" value="Partially Effective">Partially Effective</SelectItem>
+                  <SelectItem key="effectiveness-effective" value="Effective">Effective</SelectItem>
+                  <SelectItem key="effectiveness-very" value="Very Effective">Very Effective</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="treatmentPlan">Treatment Plan</Label>
+            <Label htmlFor="treatment_plan">Treatment Plan</Label>
             <Textarea
-              id="treatmentPlan"
-              name="treatmentPlan"
-              value={formData.treatmentPlan}
+              id="treatment_plan"
+              name="treatment_plan"
+              value={formData.treatment_plan || ""}
               onChange={handleChange}
               placeholder="Describe the plan to address this risk"
               rows={3}
@@ -303,15 +381,15 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
-              <Select value={formData.priority || ""} onValueChange={(value) => handleSelectChange("priority", value)}>
+              <Select value={formData.priority || "Medium"} onValueChange={(value) => handleSelectChange("priority", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Not Set">Not Set</SelectItem>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem key="priority-low" value="Low">Low</SelectItem>
+                  <SelectItem key="priority-medium" value="Medium">Medium</SelectItem>
+                  <SelectItem key="priority-high" value="High">High</SelectItem>
+                  <SelectItem key="priority-critical" value="Critical">Critical</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -321,7 +399,9 @@ export function RiskAssessmentForm({ initialData, onSave, onCancel }: RiskAssess
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit">{initialData ? "Update Risk" : "Add Risk"}</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : (initialData ? "Update Risk" : "Add Risk")}
+          </Button>
         </CardFooter>
       </Card>
     </form>

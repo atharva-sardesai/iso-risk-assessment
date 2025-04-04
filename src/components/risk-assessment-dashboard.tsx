@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Download } from "lucide-react"
+import { useEffect, useState } from 'react'
+import { Download, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -10,15 +10,48 @@ import { RiskAssessmentForm } from "@/components/risk-assessment-form"
 import { initialRiskAssessments } from "@/lib/data"
 import { getRiskLevelLabel } from "@/lib/utils"
 import type { RiskAssessment } from "@/lib/types"
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
-export function RiskAssessmentDashboard() {
-  const [riskAssessments, setRiskAssessments] = useState<RiskAssessment[]>(initialRiskAssessments)
+interface RiskAssessmentDashboardProps {
+  companyId: string
+}
+
+export function RiskAssessmentDashboard({ companyId }: RiskAssessmentDashboardProps) {
+  const [risks, setRisks] = useState<RiskAssessment[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
   const [showForm, setShowForm] = useState(false)
   const [editingAssessment, setEditingAssessment] = useState<RiskAssessment | null>(null)
+  const router = useRouter()
 
-  const filteredAssessments = riskAssessments.filter((assessment) => {
+  useEffect(() => {
+    if (companyId) {
+      fetchRisks()
+    }
+  }, [companyId])
+
+  async function fetchRisks() {
+    try {
+      setIsLoading(true)
+      const { data, error } = await supabase
+        .from('risk_assessments')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setRisks(data || [])
+    } catch (error) {
+      console.error('Error fetching risks:', error)
+      setRisks([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const filteredAssessments = risks.filter((assessment) => {
     const matchesSearch =
       assessment.asset.toLowerCase().includes(searchTerm.toLowerCase()) ||
       assessment.threat.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -27,7 +60,7 @@ export function RiskAssessmentDashboard() {
     if (filterCategory === "all") return matchesSearch
     
     // Convert the risk level to a label for comparison
-    const riskLabel = getRiskLevelLabel(assessment.riskLevel).toLowerCase()
+    const riskLabel = getRiskLevelLabel(assessment.risk_level).toLowerCase()
     return matchesSearch && riskLabel === filterCategory.toLowerCase()
   })
 
@@ -36,25 +69,52 @@ export function RiskAssessmentDashboard() {
     setShowForm(true)
   }
 
-  const handleSave = (assessment: RiskAssessment) => {
-    if (editingAssessment) {
-      // Update existing assessment
-      setRiskAssessments(riskAssessments.map((item) => (item.id === assessment.id ? assessment : item)))
-    } else {
-      // Add new assessment
-      setRiskAssessments([
-        ...riskAssessments,
-        {
-          ...assessment,
-          id: `risk-${Date.now()}`,
-        },
-      ])
+  const handleSave = async (assessment: RiskAssessment) => {
+    try {
+      if (editingAssessment) {
+        // Update existing assessment
+        const { error } = await supabase
+          .from('risk_assessments')
+          .update(assessment)
+          .eq('id', editingAssessment.id)
+
+        if (error) throw error
+      } else {
+        // Create new assessment
+        const { error } = await supabase
+          .from('risk_assessments')
+          .insert([{ ...assessment, company_id: companyId }])
+
+        if (error) throw error
+      }
+
+      // Refresh the risks list
+      await fetchRisks()
+      
+      // Reset form state
+      setShowForm(false)
+      setEditingAssessment(null)
+    } catch (error) {
+      console.error('Error saving risk assessment:', error)
+      // You might want to show an error message to the user here
     }
-    setShowForm(false)
   }
 
-  const handleDelete = (id: string) => {
-    setRiskAssessments(riskAssessments.filter((item) => item.id !== id))
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('risk_assessments')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      // Refresh the risks list
+      await fetchRisks()
+    } catch (error) {
+      console.error('Error deleting risk assessment:', error)
+      // You might want to show an error message to the user here
+    }
   }
 
   const handleExport = () => {
@@ -74,7 +134,7 @@ export function RiskAssessmentDashboard() {
         "Priority",
         "Control Effectiveness"
       ],
-      ...riskAssessments.map((item) => [
+      ...risks.map((item) => [
         item.id,
         item.category || "",
         item.asset,
@@ -82,12 +142,12 @@ export function RiskAssessmentDashboard() {
         item.vulnerability,
         item.impact,
         item.likelihood,
-        item.riskLevel,
-        item.existingControls,
-        item.treatmentPlan,
+        item.risk_level,
+        item.existing_controls,
+        item.treatment_plan,
         item.owner || "",
         item.priority || "",
-        item.controlEffectiveness || ""
+        item.control_effectiveness || ""
       ])
     ]
       .map((row) => row.join(","))
@@ -103,10 +163,32 @@ export function RiskAssessmentDashboard() {
     document.body.removeChild(link)
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Loading risks...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add New Risk
+        </Button>
+      </div>
       {showForm ? (
-        <RiskAssessmentForm initialData={editingAssessment} onSave={handleSave} onCancel={() => setShowForm(false)} />
+        <RiskAssessmentForm 
+          initialData={editingAssessment} 
+          onSave={handleSave} 
+          onCancel={() => setShowForm(false)} 
+          companyId={companyId}
+        />
       ) : (
         <>
           <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
@@ -138,7 +220,10 @@ export function RiskAssessmentDashboard() {
             </div>
           </div>
 
-          <RiskAssessmentTable assessments={filteredAssessments} onEdit={handleEdit} onDelete={handleDelete} />
+          <RiskAssessmentTable 
+            risks={filteredAssessments} 
+            onRiskUpdate={fetchRisks} 
+          />
         </>
       )}
     </div>
