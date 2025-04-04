@@ -2,7 +2,7 @@
 
 import { RiskAssessmentDashboard as RAD } from "@/components/risk-assessment-dashboard"
 
-export const RiskAssessmentDashboard = () => {
-  return <RAD />
+export const RiskAssessmentDashboard = ({ companyId }: { companyId: string }) => {
+  return <RAD companyId={companyId} />
 }
 

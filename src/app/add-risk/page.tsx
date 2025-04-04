@@ -4,9 +4,9 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { RiskAssessmentForm } from "@/components/risk-assessment-form"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
-import type { RiskAssessment } from "@/lib/types"
+import { Suspense } from "react"
 
-export default function AddRiskPage() {
+function AddRiskContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const companyId = searchParams.get('companyId')
@@ -32,7 +32,7 @@ export default function AddRiskPage() {
     )
   }
 
-  const handleSave = (assessment: RiskAssessment) => {
+  const handleSave = () => {
     // Navigate to the company's risk assessment page
     router.push(`/companies/${companyId}/risks`)
   }
@@ -48,19 +48,27 @@ export default function AddRiskPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/companies/${companyId}/risks`)}
+          onClick={() => router.push("/")}
           className="hover:bg-muted"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">Add New Risk Assessment</h1>
       </div>
-      
-      <RiskAssessmentForm
-        initialData={null}
-        onSave={handleSave}
+      <RiskAssessmentForm 
+        initialData={null} 
+        onSave={handleSave} 
         onCancel={handleCancel}
+        companyId={companyId}
       />
     </div>
+  )
+}
+
+export default function AddRiskPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AddRiskContent />
+    </Suspense>
   )
 } 

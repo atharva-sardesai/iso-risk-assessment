@@ -10,20 +10,19 @@ import type { RiskAssessment } from "@/lib/types"
 import { RiskDetailsDialog } from "@/components/risk-details-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getRiskLevelLabel } from "@/lib/utils"
-import { supabase } from "@/lib/supabase"
 import { Input } from "@/components/ui/input"
 import { RISK_CATEGORIES } from "@/lib/constants"
 
 interface RiskAssessmentTableProps {
   risks: RiskAssessment[]
-  onRiskUpdate: () => void
+  onEdit?: (assessment: RiskAssessment) => void
+  onDelete?: (id: string) => void
 }
 
-export function RiskAssessmentTable({ risks = [], onRiskUpdate }: RiskAssessmentTableProps) {
+export function RiskAssessmentTable({ risks = [], onEdit, onDelete }: RiskAssessmentTableProps) {
   const [sortField, setSortField] = useState<keyof RiskAssessment>("risk_level")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [selectedRisk, setSelectedRisk] = useState<RiskAssessment | null>(null)
-  const [filters, setFilters] = useState<Partial<Record<keyof RiskAssessment, string>>>({})
   const [isDragging, setIsDragging] = useState(false)
   const [startX, setStartX] = useState(0)
   const [startY, setStartY] = useState(0)
@@ -40,21 +39,6 @@ export function RiskAssessmentTable({ risks = [], onRiskUpdate }: RiskAssessment
       setSortField(field)
       setSortDirection("asc")
     }
-  }
-
-  const handleFilter = (field: keyof RiskAssessment, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [field]: value === "all" ? undefined : value
-    }))
-  }
-
-  const getUniqueValues = (field: keyof RiskAssessment) => {
-    const values = new Set(risks.map(a => {
-      const value = a[field]
-      return value !== undefined && value !== null ? String(value) : undefined
-    }).filter(Boolean))
-    return Array.from(values)
   }
 
   const filteredRisks = risks.filter((risk) => {
@@ -98,23 +82,6 @@ export function RiskAssessmentTable({ risks = [], onRiskUpdate }: RiskAssessment
         return "destructive"
       default:
         return "outline"
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('risk_assessments')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-
-      // Refresh the risks list
-      onRiskUpdate()
-    } catch (error) {
-      console.error('Error deleting risk assessment:', error)
-      // You might want to show an error message to the user here
     }
   }
 
@@ -232,17 +199,21 @@ export function RiskAssessmentTable({ risks = [], onRiskUpdate }: RiskAssessment
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => setSelectedRisk(risk)}>
-                        <Eye className="mr-2 h-4 w-4" />
+                        <Eye className="h-4 w-4 mr-2" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onRiskUpdate()}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(risk.id)}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
+                      {onEdit && (
+                        <DropdownMenuItem onClick={() => onEdit(risk)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                      )}
+                      {onDelete && (
+                        <DropdownMenuItem onClick={() => onDelete(risk.id)}>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

@@ -1,17 +1,15 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Download, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RiskAssessmentTable } from "@/components/risk-assessment-table"
 import { RiskAssessmentForm } from "@/components/risk-assessment-form"
-import { initialRiskAssessments } from "@/lib/data"
 import { getRiskLevelLabel } from "@/lib/utils"
 import type { RiskAssessment } from "@/lib/types"
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
 
 interface RiskAssessmentDashboardProps {
   companyId: string
@@ -24,15 +22,8 @@ export function RiskAssessmentDashboard({ companyId }: RiskAssessmentDashboardPr
   const [filterCategory, setFilterCategory] = useState("all")
   const [showForm, setShowForm] = useState(false)
   const [editingAssessment, setEditingAssessment] = useState<RiskAssessment | null>(null)
-  const router = useRouter()
 
-  useEffect(() => {
-    if (companyId) {
-      fetchRisks()
-    }
-  }, [companyId])
-
-  async function fetchRisks() {
+  const fetchRisks = useCallback(async () => {
     try {
       setIsLoading(true)
       const { data, error } = await supabase
@@ -49,7 +40,13 @@ export function RiskAssessmentDashboard({ companyId }: RiskAssessmentDashboardPr
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [companyId])
+
+  useEffect(() => {
+    if (companyId) {
+      fetchRisks()
+    }
+  }, [companyId, fetchRisks])
 
   const filteredAssessments = risks.filter((assessment) => {
     const matchesSearch =
@@ -222,7 +219,8 @@ export function RiskAssessmentDashboard({ companyId }: RiskAssessmentDashboardPr
 
           <RiskAssessmentTable 
             risks={filteredAssessments} 
-            onRiskUpdate={fetchRisks} 
+            onEdit={handleEdit}
+            onDelete={handleDelete}
           />
         </>
       )}
