@@ -4,10 +4,11 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Log environment variable status
-if (typeof window !== 'undefined') {
-  console.log('Supabase URL available:', !!supabaseUrl)
-  console.log('Supabase Anon Key available:', !!supabaseAnonKey)
+// Log environment variable status in development
+if (process.env.NODE_ENV === 'development') {
+  console.log('Environment:', process.env.NODE_ENV)
+  console.log('Supabase URL:', supabaseUrl ? 'Available' : 'Missing')
+  console.log('Supabase Anon Key:', supabaseAnonKey ? 'Available' : 'Missing')
 }
 
 // Create a single supabase client for interacting with your database
@@ -31,6 +32,7 @@ export const supabase = supabaseUrl && supabaseAnonKey
 export function isSupabaseAvailable() {
   // Check if we're in a browser environment
   if (typeof window === 'undefined') {
+    console.log('Not in browser environment')
     return false
   }
 
@@ -48,5 +50,6 @@ export function isSupabaseAvailable() {
     return false
   }
 
+  // Test the connection
   return true
 } 

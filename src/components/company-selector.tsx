@@ -26,7 +26,13 @@ export function CompanySelector({ onCompanySelect, selectedCompanyId }: CompanyS
         setError(null)
 
         if (!isSupabaseAvailable()) {
-          setError("Database connection is not available. Please check your environment configuration.")
+          const envError = !process.env.NEXT_PUBLIC_SUPABASE_URL 
+            ? 'NEXT_PUBLIC_SUPABASE_URL is missing'
+            : !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+              ? 'NEXT_PUBLIC_SUPABASE_ANON_KEY is missing'
+              : 'Database connection failed'
+          
+          setError(`Database connection is not available. ${envError}`)
           setCompanies([])
           return
         }
@@ -40,7 +46,7 @@ export function CompanySelector({ onCompanySelect, selectedCompanyId }: CompanyS
         setCompanies(data || [])
       } catch (error) {
         console.error('Error fetching companies:', error)
-        setError("Failed to fetch companies. Please try again later.")
+        setError(`Failed to fetch companies: ${error instanceof Error ? error.message : 'Unknown error'}`)
         setCompanies([])
       } finally {
         setIsLoading(false)
@@ -58,7 +64,13 @@ export function CompanySelector({ onCompanySelect, selectedCompanyId }: CompanyS
       }
 
       if (!isSupabaseAvailable()) {
-        setError("Database connection is not available. Please check your environment configuration.")
+        const envError = !process.env.NEXT_PUBLIC_SUPABASE_URL 
+          ? 'NEXT_PUBLIC_SUPABASE_URL is missing'
+          : !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+            ? 'NEXT_PUBLIC_SUPABASE_ANON_KEY is missing'
+            : 'Database connection failed'
+        
+        setError(`Database connection is not available. ${envError}`)
         return
       }
 
@@ -75,7 +87,7 @@ export function CompanySelector({ onCompanySelect, selectedCompanyId }: CompanyS
       onCompanySelect(data.id)
     } catch (error) {
       console.error('Error creating company:', error)
-      setError("Failed to create company. Please try again later.")
+      setError(`Failed to create company: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -95,10 +107,17 @@ export function CompanySelector({ onCompanySelect, selectedCompanyId }: CompanyS
       <div className="max-w-md mx-auto p-6 space-y-6">
         <h1 className="text-2xl font-bold text-center">Error</h1>
         <div className="bg-destructive/10 text-destructive p-4 rounded-md">
-          <p>{error}</p>
+          <p className="font-medium">{error}</p>
           <p className="mt-2 text-sm">
             Please check your environment configuration and try again.
           </p>
+          <div className="mt-4 space-y-2">
+            <p className="text-sm">Environment variables status:</p>
+            <ul className="text-sm space-y-1">
+              <li>NEXT_PUBLIC_SUPABASE_URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Available' : '❌ Missing'}</li>
+              <li>NEXT_PUBLIC_SUPABASE_ANON_KEY: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Available' : '❌ Missing'}</li>
+            </ul>
+          </div>
         </div>
         <Button
           variant="outline"
